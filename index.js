@@ -1,3 +1,6 @@
+import Player from './Player.js';
+import Bin from './Bin.js'
+
 // create a number that is closer to 0.5
 const rndGenerator = () => {
 	let rnd = 0;
@@ -13,55 +16,48 @@ const rndGenerator = () => {
 
 const startTime = new Date();
 
-const arr = [];
-const generateNumbers = (amount) => {
+const playerArr = [];
+const generatePlayers = (amount) => {
 	for(let i = 0; i < amount; i++) {
-		arr.push(Math.floor(rndGenerator()*3000));
+		const player = new Player(i, Math.floor(rndGenerator()*3000))
+		playerArr.push(player);
 	}
 }
 
-generateNumbers(1000000);
+generatePlayers(1000000);
 
 const generationEndTime = new Date();
 let duration = generationEndTime - startTime;
 
-console.log(`Generated ${arr.length} numbers in ${duration}ms`);
+console.log(`Generated ${playerArr.length} numbers in ${duration}ms`);
 
-arr.sort((a,b) => a - b);
-
-const sortEndTime = new Date();
-duration = sortEndTime - generationEndTime;
-
-console.log(`Sorted ${arr.length} elements in ${duration}ms`);
-
-const createBins = (minBinValue, maxBinValue, binRange) => {
-	const nrOfBins = Math.ceil((maxBinValue - minBinValue) / binRange);
-
-	const bins = {};
-
-	for(let i = 0; i < nrOfBins; i++) {
-		bins[minBinValue + binRange * i] = {
-			min: minBinValue + binRange * i,
-			max: minBinValue + (binRange * i) + binRange,
-			values: []
-		};
+const maxBinSize = 10000;
+const createBins = () => {
+	const bins = [];
+	const initialBin = new Bin(0, 3000);
+	bins.push(initialBin);
+	for (let player of playerArr) {
+		// see which bin this player needs to go into
+		for (let i = 0; i < bins.length; i++) {
+			if (bins[i].min < player.rating && bins[i].max > player.rating) {
+				//console.log(`Inserting ${player.rating} to ${bins[i].min}-${bins[i].max}`);
+				bins[i].push(player);
+				if (bins[i].size > maxBinSize) {
+					const splitBins = bins[i].split();
+					//console.log(`Split ${bins[i].min}-${bins[i].max} into ${splitBins[0].min}-${splitBins[0].max} and ${splitBins[1].min}-${splitBins[1].max}`);
+					bins[i] = splitBins[0];
+					bins.push(splitBins[1]);
+				}
+				break;
+			}
+		}
 	}
-
 	return bins;
 }
 
-const bins = createBins(0, 3000, 100);
+const bins = createBins();
 
-const fillBins = (binsToFill) => {
-	for(const number of arr) {
-		const h = Math.floor(number / 100) * 100;
-		binsToFill[h].values.push(number);
-	}
-}
+const binCreationEndTime = new Date();
+duration = binCreationEndTime - generationEndTime;
 
-fillBins(bins);
-
-const binCreationAndFillTime = new Date();
-duration = binCreationAndFillTime - sortEndTime;
-
-console.log(`Filled ${Object.keys(bins).length} bins with ${arr.length} values in ${duration}ms`);
+console.log(`Created ${bins.length} bins in ${duration}ms`);
